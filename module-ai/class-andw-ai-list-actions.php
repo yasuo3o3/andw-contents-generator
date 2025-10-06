@@ -75,12 +75,14 @@ class Andw_Contents_Generator_AI_List_Actions {
 		$keywords = isset( $_POST['andw_ai_keywords'] ) ? sanitize_text_field( wp_unslash( $_POST['andw_ai_keywords'] ) ) : '';
 
 		if ( empty( $keywords ) ) {
-			wp_safe_redirect( add_query_arg( 'andw_ai_error', 'keywords', admin_url( 'edit.php?post_type=post' ) ) );
+			$redirect_url = add_query_arg( array( 'andw_ai_error' => 'keywords', '_wpnonce' => wp_create_nonce( 'andw_ai_notice' ) ), admin_url( 'edit.php?post_type=post' ) );
+		wp_safe_redirect( $redirect_url );
 			exit;
 		}
 
 		if ( ! $this->service->is_ready() ) {
-			wp_safe_redirect( add_query_arg( 'andw_ai_error', 'config', admin_url( 'edit.php?post_type=post' ) ) );
+			$redirect_url = add_query_arg( array( 'andw_ai_error' => 'config', '_wpnonce' => wp_create_nonce( 'andw_ai_notice' ) ), admin_url( 'edit.php?post_type=post' ) );
+		wp_safe_redirect( $redirect_url );
 			exit;
 		}
 
@@ -95,7 +97,8 @@ class Andw_Contents_Generator_AI_List_Actions {
 
 		if ( is_wp_error( $post_id ) ) {
 			$this->logger->log( 'Failed to create draft before AI generation', array( 'error' => $post_id->get_error_message() ) );
-			wp_safe_redirect( add_query_arg( 'andw_ai_error', 'insert', admin_url( 'edit.php?post_type=post' ) ) );
+			$redirect_url = add_query_arg( array( 'andw_ai_error' => 'insert', '_wpnonce' => wp_create_nonce( 'andw_ai_notice' ) ), admin_url( 'edit.php?post_type=post' ) );
+		wp_safe_redirect( $redirect_url );
 			exit;
 		}
 
@@ -110,7 +113,8 @@ class Andw_Contents_Generator_AI_List_Actions {
 		if ( is_wp_error( $result ) ) {
 			wp_delete_post( $post_id, true );
 			$this->logger->log( 'AI draft generation failed', array( 'error' => $result->get_error_message(), 'keywords' => $keywords ) );
-			wp_safe_redirect( add_query_arg( 'andw_ai_error', 'api', admin_url( 'edit.php?post_type=post' ) ) );
+			$redirect_url = add_query_arg( array( 'andw_ai_error' => 'api', '_wpnonce' => wp_create_nonce( 'andw_ai_notice' ) ), admin_url( 'edit.php?post_type=post' ) );
+		wp_safe_redirect( $redirect_url );
 			exit;
 		}
 
@@ -124,7 +128,8 @@ class Andw_Contents_Generator_AI_List_Actions {
 			)
 		);
 
-		wp_safe_redirect( add_query_arg( 'andw_ai_success', '1', admin_url( sprintf( 'post.php?post=%d&action=edit', $post_id ) ) ) );
+		$redirect_url = add_query_arg( array( 'andw_ai_success' => '1', '_wpnonce' => wp_create_nonce( 'andw_ai_notice' ) ), admin_url( sprintf( 'post.php?post=%d&action=edit', $post_id ) ) );
+		wp_safe_redirect( $redirect_url );
 		exit;
 	}
 
@@ -132,6 +137,10 @@ class Andw_Contents_Generator_AI_List_Actions {
 	 * Maybe render success notice on post edit screen.
 	 */
 	public function maybe_show_success_notice() {
+		if ( ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( sanitize_key( wp_unslash( $_GET['_wpnonce'] ) ), 'andw_ai_notice' ) ) {
+			return;
+		}
+
 		if ( ! isset( $_GET['andw_ai_success'] ) ) {
 			return;
 		}
@@ -151,6 +160,10 @@ class Andw_Contents_Generator_AI_List_Actions {
 	 * Maybe render error notice on list screen.
 	 */
 	public function maybe_show_error_notice() {
+		if ( ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( sanitize_key( wp_unslash( $_GET['_wpnonce'] ) ), 'andw_ai_notice' ) ) {
+			return;
+		}
+
 		if ( ! isset( $_GET['andw_ai_error'] ) ) {
 			return;
 		}
