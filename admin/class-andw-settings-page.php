@@ -1,0 +1,160 @@
+<?php
+defined( 'ABSPATH' ) || exit;
+
+/**
+ * Settings page renderer.
+ */
+class Andw_Contents_Generator_Settings_Page {
+	/**
+	 * Settings manager.
+	 *
+	 * @var Andw_Contents_Generator_Settings
+	 */
+	private $settings;
+
+	/**
+	 * Logger instance.
+	 *
+	 * @var Andw_Contents_Generator_Logger
+	 */
+	private $logger;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param Andw_Contents_Generator_Settings $settings Settings manager.
+	 * @param Andw_Contents_Generator_Logger   $logger   Logger instance.
+	 */
+	public function __construct( Andw_Contents_Generator_Settings $settings, Andw_Contents_Generator_Logger $logger ) {
+		$this->settings = $settings;
+		$this->logger   = $logger;
+	}
+
+	/**
+	 * Register options page.
+	 */
+	public function register() {
+		add_options_page(
+			esc_html__( 'andW Contents Generator', 'andw-contents-generator' ),
+			esc_html__( 'andW生成', 'andw-contents-generator' ),
+			'manage_options',
+			'andw-contents-generator',
+			array( $this, 'render' )
+		);
+	}
+
+	/**
+	 * Render settings page.
+	 */
+	public function render() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'このページにアクセスする権限がありません。', 'andw-contents-generator' ) );
+		}
+
+		$tab        = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'ai';
+		$tab        = in_array( $tab, array( 'ai', 'html' ), true ) ? $tab : 'ai';
+		$ai_settings   = $this->settings->get_ai_settings();
+		html_settings  = $this->settings->get_html_settings();
+		$domain_text   = implode( "\n", $html_settings['allowlist_domains'] );
+
+		?>
+		<div class="wrap">
+			<h1><?php esc_html_e( 'andW Contents Generator 設定', 'andw-contents-generator' ); ?></h1>
+			<h2 class="nav-tab-wrapper">
+				<a href="<?php echo esc_url( add_query_arg( 'tab', 'ai' ) ); ?>" class="nav-tab <?php echo 'ai' === $tab ? 'nav-tab-active' : ''; ?>">
+					<?php esc_html_e( 'AI生成', 'andw-contents-generator' ); ?>
+				</a>
+				<a href="<?php echo esc_url( add_query_arg( 'tab', 'html' ) ); ?>" class="nav-tab <?php echo 'html' === $tab ? 'nav-tab-active' : ''; ?>">
+					<?php esc_html_e( 'HTMLインポート', 'andw-contents-generator' ); ?>
+				</a>
+			</h2>
+
+			<?php if ( 'ai' === $tab ) : ?>
+				<?php if ( ! Andw_Contents_Generator_Permissions::can_manage_ai() ) : ?>
+					<p><?php esc_html_e( 'AI生成設定を変更する権限がありません。', 'andw-contents-generator' ); ?></p>
+				<?php else : ?>
+					<form method="post" action="options.php">
+						<?php settings_fields( 'andw_contents_generator_ai' ); ?>
+						<table class="form-table" role="presentation">
+							<tbody>
+								<tr>
+									<th scope="row"><label for="andw-ai-api-key"><?php esc_html_e( 'OpenAI APIキー', 'andw-contents-generator' ); ?></label></th>
+									<td>
+										<input name="<?php echo esc_attr( Andw_Contents_Generator_Settings::OPTION_AI ); ?>[api_key]" id="andw-ai-api-key" type="password" class="regular-text" value="<?php echo esc_attr( $ai_settings['api_key'] ); ?>" autocomplete="off" />
+										<p class="description"><?php esc_html_e( 'APIキーは安全に保管され、画面には伏せられます。', 'andw-contents-generator' ); ?></p>
+									</td>
+								</tr>
+								<tr>
+									<th scope="row"><label for="andw-ai-model"><?php esc_html_e( 'モデル名', 'andw-contents-generator' ); ?></label></th>
+									<td>
+										<input name="<?php echo esc_attr( Andw_Contents_Generator_Settings::OPTION_AI ); ?>[model]" id="andw-ai-model" type="text" class="regular-text" value="<?php echo esc_attr( $ai_settings['model'] ); ?>" />
+									</td>
+								</tr>
+								<tr>
+									<th scope="row"><label for="andw-ai-max-tokens"><?php esc_html_e( '最大トークン数', 'andw-contents-generator' ); ?></label></th>
+									<td>
+										<input name="<?php echo esc_attr( Andw_Contents_Generator_Settings::OPTION_AI ); ?>[max_tokens]" id="andw-ai-max-tokens" type="number" class="small-text" value="<?php echo esc_attr( $ai_settings['max_tokens'] ); ?>" min="1" max="4096" />
+									</td>
+								</tr>
+								<tr>
+									<th scope="row"><label for="andw-ai-prompt"><?php esc_html_e( '既定プロンプト', 'andw-contents-generator' ); ?></label></th>
+									<td>
+										<textarea name="<?php echo esc_attr( Andw_Contents_Generator_Settings::OPTION_AI ); ?>[prompt]" id="andw-ai-prompt" class="large-text code" rows="5"><?php echo esc_textarea( $ai_settings['prompt'] ); ?></textarea>
+										<p class="description"><?php esc_html_e( 'キーワードに差し替えられる {{keyword}} プレースホルダーが利用できます。', 'andw-contents-generator' ); ?></p>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+						<?php submit_button(); ?>
+					</form>
+				<?php endif; ?>
+			<?php else : ?>
+				<?php if ( ! Andw_Contents_Generator_Permissions::can_manage_html() ) : ?>
+					<p><?php esc_html_e( 'HTMLインポート設定を変更する権限がありません。', 'andw-contents-generator' ); ?></p>
+				<?php else : ?>
+					<form method="post" action="options.php">
+						<?php settings_fields( 'andw_contents_generator_html' ); ?>
+						<table class="form-table" role="presentation">
+							<tbody>
+								<tr>
+									<th scope="row"><?php esc_html_e( '列化の自動判定', 'andw-contents-generator' ); ?></th>
+									<td>
+										<label for="andw-html-column-detection">
+											<input type="checkbox" name="<?php echo esc_attr( Andw_Contents_Generator_Settings::OPTION_HTML ); ?>[column_detection]" id="andw-html-column-detection" value="1" <?php checked( $html_settings['column_detection'] ); ?> />
+											<?php esc_html_e( '類似コンテンツを自動的に列化する', 'andw-contents-generator' ); ?>
+										</label>
+									</td>
+								</tr>
+								<tr>
+									<th scope="row"><label for="andw-html-score-threshold"><?php esc_html_e( '列化閾値', 'andw-contents-generator' ); ?></label></th>
+									<td>
+										<input type="number" step="0.1" min="0" max="1" class="small-text" name="<?php echo esc_attr( Andw_Contents_Generator_Settings::OPTION_HTML ); ?>[score_threshold]" id="andw-html-score-threshold" value="<?php echo esc_attr( $html_settings['score_threshold'] ); ?>" />
+										<p class="description"><?php esc_html_e( '列化判定のスコア。高いほど厳密になります。', 'andw-contents-generator' ); ?></p>
+									</td>
+								</tr>
+								<tr>
+									<th scope="row"><label for="andw-html-strip-attributes"><?php esc_html_e( '不要属性の除去', 'andw-contents-generator' ); ?></label></th>
+									<td>
+										<label for="andw-html-strip-attributes">
+											<input type="checkbox" name="<?php echo esc_attr( Andw_Contents_Generator_Settings::OPTION_HTML ); ?>[strip_attributes]" id="andw-html-strip-attributes" value="1" <?php checked( $html_settings['strip_attributes'] ); ?> />
+											<?php esc_html_e( 'style/class/on* 属性などを除去する', 'andw-contents-generator' ); ?>
+										</label>
+									</td>
+								</tr>
+								<tr>
+									<th scope="row"><label for="andw-html-allowlist"><?php esc_html_e( 'iframe許可ドメイン', 'andw-contents-generator' ); ?></label></th>
+									<td>
+										<textarea name="<?php echo esc_attr( Andw_Contents_Generator_Settings::OPTION_HTML ); ?>[allowlist_domains]" id="andw-html-allowlist" class="large-text code" rows="4"><?php echo esc_textarea( $domain_text ); ?></textarea>
+										<p class="description"><?php esc_html_e( '1行に1ドメインを入力。許可されていないiframeは除去されます。', 'andw-contents-generator' ); ?></p>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+						<?php submit_button(); ?>
+					</form>
+				<?php endif; ?>
+			<?php endif; ?>
+		</div>
+		<?php
+	}
+}
