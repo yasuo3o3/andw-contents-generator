@@ -173,7 +173,7 @@ class Andw_Contents_Generator_Settings_Page {
 						<?php submit_button(); ?>
 					</form>
 				<?php endif; ?>
-			<?php else : ?>
+			<?php elseif ( 'html' === $tab ) : ?>
 				<?php if ( ! Andw_Contents_Generator_Permissions::can_manage_html() ) : ?>
 					<p><?php esc_html_e( 'HTMLインポート設定を変更する権限がありません。', 'andw-contents-generator' ); ?></p>
 				<?php else : ?>
