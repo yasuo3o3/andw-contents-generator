@@ -51,20 +51,23 @@ class Andw_Contents_Generator_Settings_Page {
 			wp_die( esc_html__( 'このページにアクセスする権限がありません。', 'andw-contents-generator' ) );
 		}
 
-		$tab        = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'ai';
-		$tab        = in_array( $tab, array( 'ai', 'html' ), true ) ? $tab : 'ai';
+		$tab = 'ai';
+		if ( isset( $_GET['_wpnonce'] ) && wp_verify_nonce( sanitize_key( wp_unslash( $_GET['_wpnonce'] ) ), 'andw_settings_tab' ) && isset( $_GET['tab'] ) ) {
+			$requested_tab = sanitize_key( wp_unslash( $_GET['tab'] ) );
+			$tab = in_array( $requested_tab, array( 'ai', 'html' ), true ) ? $requested_tab : 'ai';
+		}
 		$ai_settings   = $this->settings->get_ai_settings();
-		html_settings  = $this->settings->get_html_settings();
+		$html_settings = $this->settings->get_html_settings();
 		$domain_text   = implode( "\n", $html_settings['allowlist_domains'] );
 
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'andW Contents Generator 設定', 'andw-contents-generator' ); ?></h1>
 			<h2 class="nav-tab-wrapper">
-				<a href="<?php echo esc_url( add_query_arg( 'tab', 'ai' ) ); ?>" class="nav-tab <?php echo 'ai' === $tab ? 'nav-tab-active' : ''; ?>">
+				<a href="<?php echo esc_url( wp_nonce_url( add_query_arg( 'tab', 'ai' ), 'andw_settings_tab' ) ); ?>" class="nav-tab <?php echo 'ai' === $tab ? 'nav-tab-active' : ''; ?>">
 					<?php esc_html_e( 'AI生成', 'andw-contents-generator' ); ?>
 				</a>
-				<a href="<?php echo esc_url( add_query_arg( 'tab', 'html' ) ); ?>" class="nav-tab <?php echo 'html' === $tab ? 'nav-tab-active' : ''; ?>">
+				<a href="<?php echo esc_url( wp_nonce_url( add_query_arg( 'tab', 'html' ), 'andw_settings_tab' ) ); ?>" class="nav-tab <?php echo 'html' === $tab ? 'nav-tab-active' : ''; ?>">
 					<?php esc_html_e( 'HTMLインポート', 'andw-contents-generator' ); ?>
 				</a>
 			</h2>
