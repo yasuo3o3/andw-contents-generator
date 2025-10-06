@@ -102,20 +102,12 @@ final class Andw_Contents_Generator {
 		$this->logger   = new Andw_Contents_Generator_Logger( ANDW_CONTENTS_GENERATOR_PATH . 'logs' );
 		$this->settings = new Andw_Contents_Generator_Settings( $this->logger );
 
-		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
 		add_action( 'init', array( 'Andw_Contents_Generator_Permissions', 'ensure_caps' ) );
 		add_action( 'admin_menu', array( $this, 'register_settings_page' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_filter( 'plugin_action_links_' . ANDW_CONTENTS_GENERATOR_BASENAME, array( $this, 'add_settings_link' ) );
 
 		$this->boot_modules();
-	}
-
-	/**
-	 * Load translations.
-	 */
-	public function load_textdomain() {
-		load_plugin_textdomain( 'andw-contents-generator', false, dirname( ANDW_CONTENTS_GENERATOR_BASENAME ) . '/languages' );
 	}
 
 	/**
